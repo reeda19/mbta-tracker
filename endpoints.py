@@ -1,6 +1,7 @@
 # importing the requests library
 import requests
 from enum import Enum
+import datetime
 # mbta inefficiency dashboard: 
 # Tracks average speed of trains, amount of stoppages/break downs per day per line,
 # most and least efficient lines, avg time between trains, etc
@@ -19,7 +20,11 @@ base_url = f'https://api-v3.mbta.com/'
 lines = ['Red', 'Orange', 'Blue', 'Green-B', 'Green-C', 'Green-D', 'Green-E']
 
 def get_trips_per_day_per_line():
-    pass
+    for line in lines:
+        get_url = f'https://api-v3.mbta.com/schedules?filter[route]={line}'
+        r = requests.get(url = get_url)
+        data = r.json()['data']
+        print(f'Number of trips for {line}: {len(data)}')
 
 def get_average_train_speed_by_line():
     for line in lines:
@@ -32,10 +37,14 @@ def get_average_train_speed_by_line():
 
 def get_average_time_between_trains_by_line():
     for line in lines:
-        get_url = f'https://api-v3.mbta.com/vehicles?filter[route]={line}&include=trip'
+        get_url = f'https://api-v3.mbta.com/schedules?filter[route]={line}'
         r = requests.get(url = get_url)
         data = r.json()['data']
-        arrival_times = [train['attributes']['arrival_time'] for train in data[:3]]
+        times = [datetime.datetime.strptime(train['attributes']['departure_time'], '%Y-%m-%dT%H:%M:%S-04:00') for train in data if train['attributes']['departure_time'] != None]
+        times.sort()
+        time_diffs = [times[i+1] - times[i] for i in range(len(times)-1)]
+        avg_time_diff = 0 if len(time_diffs) == 0 else sum(time_diffs, datetime.timedelta(0))/len(time_diffs)
+        print(f'Average time between trains for {line}: {avg_time_diff}') 
         
 
 def get_number_of_stoppages_per_day_per_line():
@@ -50,5 +59,8 @@ def get_number_of_available_trains_per_line_per_day():
 
 get_number_of_available_trains_per_line_per_day()
 get_average_train_speed_by_line()
+get_average_time_between_trains_by_line()
+get_trips_per_day_per_line()
+
 
 
