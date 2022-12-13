@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MBTA Dashboard</title>
+</head>
+
+<body>
+    <h1>MBTA Dashboard</h1>
+
+<div id="chart"></div>
+
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+    // Get the data from the Flask app
+    var mbta_data = {{ mbta_data|tojson }};
+
+    // Set the dimensions and margins of the chart
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    // Set the scales for the x and y axes
+    var x = d3.scaleBand()
+              .range([0, width])
+              .padding(0.1);
+    var y = d3.scaleTime()
+              .range([height, 0]);
+
+    // Set the x axis
+    var xAxis = d3.axisBottom(x);
+
+    // Set the y axis
+    var yAxis = d3.axisLeft(y)
+                  .tickFormat(d3.timeFormat("%I:%M %p"));
+
+    // Create the SVG element
+    var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Parse the dates and set the domains for the x and y axes
+    mbta_data.forEach(function(d) {
+        d.arrival_time = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ")(d.arrival_time);
+        d.departure_time = d3.timeParse("%Y-%m-%dT%H:%M:%S.%LZ")(d.departure_time);
+        d.train_id = d.train_id;
+    });
+    x.domain(mbta_data.map(function(d) { return d.train_id; }));
+    y.domain([d3.min(mbta_data, function(d) { return d.departure_time; }), d3.max(mbta_data, function(d) { return d.arrival_time; })]);
+
+    // Add the x axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    // Add the y axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+    // Add the bars for the arrival times
+    svg.selectAll(".bar")
+        .data(mbta_data)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) { return x(d.train_id); })
+        .attr("width", x.bandwidth())
+        .attr("y", function(d) { return y(d.arrival_time); })
+        .attr("height", function(d) { return y(d.departure_time) - y(d.arrival_time); });
+
+</script>
+
+
+
+
+
+</body>
+
+</html>
