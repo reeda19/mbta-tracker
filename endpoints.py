@@ -57,6 +57,14 @@ def get_number_of_available_trains_per_line_per_day():
         data = r.json()['data']
         print(f'Number of available trains for {line}: {len(data)}')
 
+# get latitudes and longitudes of all trains on a given line
+def get_train_locations_by_line(line):
+    get_url = f'https://api-v3.mbta.com/vehicles?filter[route]={line}&include=trip'
+    r = requests.get(url = get_url)
+    data = r.json()['data']
+    locations = [(train['attributes']['latitude'], train['attributes']['longitude']) for train in data if train['attributes']['latitude'] != None and train['attributes']['longitude'] != None]
+    print(locations)
+
 get_number_of_available_trains_per_line_per_day()
 get_average_train_speed_by_line()
 get_average_time_between_trains_by_line()
